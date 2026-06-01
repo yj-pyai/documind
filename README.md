@@ -195,16 +195,6 @@ documind/
 - [ ] 音视频转录
 - [ ] LangChain 集成
 
-## 📝 简历亮点
-
-完成本项目后，你可以在简历上写：
-
-> **DocuMind — AI 智能知识库问答平台** | Next.js · FastAPI · SQLAlchemy · DeepSeek
-> - 基于 RAG 架构实现文档语义检索与智能问答，支持 PDF/Word/Markdown 多格式解析
-> - 设计滑动窗口+语义感知的文本分块策略，向量化存储并构建余弦相似度检索引擎
-> - 通过 SSE 实现 LLM 流式回答，带来源引用标记，提升交互体验
-> - 构建完整全栈应用：Next.js App Router + FastAPI + SQLAlchemy，含 JWT 认证、文件管理、多轮对话
-
 ## 📄 License
 
-MIT License
+MIT License © 2026 yj-pyai
