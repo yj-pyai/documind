@@ -197,4 +197,4 @@ documind/
 
 ## 📄 License
 
-MIT License © 2026 yj-pyai
+Copyright © 2026 yj-pyai
