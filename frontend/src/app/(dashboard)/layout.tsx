@@ -12,34 +12,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(true);
+  const [ready, setReady] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.push("/login");
+      window.location.href = "/login";
       return;
     }
+
+    // Try cached user first
     const cached = getUser();
     if (cached) {
       setUser(cached);
-    } else {
-      authAPI.getMe().then(res => setUser(res.data)).catch(() => router.push("/login"));
+      setReady(true);
+      return;
     }
-  }, [router]);
+
+    // Verify with server
+    authAPI.getMe()
+      .then(res => {
+        setUser(res.data);
+        setReady(true);
+      })
+      .catch(() => {
+        doLogout();
+      });
+  }, []);
 
   useEffect(() => {
-    if (dark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
 
   const handleLogout = () => {
     doLogout();
   };
+
+  if (!ready) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--background)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--border)] border-t-[var(--primary)]" />
+      </div>
+    );
+  }
 
   const navItems = [
     { href: "/dashboard", label: "工作台", icon: Zap },
@@ -50,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-[var(--background)]">
-      {/* Sidebar - Desktop */}
+      {/* Sidebar Desktop */}
       <aside className="hidden md:flex w-64 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
         <div className="p-6 border-b border-[var(--border)]">
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -60,17 +77,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
-            const active = pathname.startsWith(item.href) && (item.href !== "/kb" || pathname === "/kb" || pathname.startsWith("/kb/"));
-            const isKbActive = item.href === "/kb" && (pathname === "/kb" || pathname.startsWith("/kb/"));
-            const isActive = item.href === "/dashboard" ? pathname === "/dashboard" :
-                            item.href === "/kb" ? isKbActive :
-                            pathname.startsWith(item.href);
+            const active = pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
+                  active
                     ? "bg-[var(--primary)]/10 text-[var(--primary)]"
                     : "text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
                 }`}
@@ -115,7 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
       </div>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile sidebar */}
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-20">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />

@@ -6,20 +6,31 @@ import { User } from "@/types";
 import { authAPI } from "@/lib/api";
 import { getToken, setToken, removeToken, getUser, setUser, removeUser } from "@/lib/auth";
 
-export function useAuth() {
+export function useAuth(requireAuth = false) {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Check auth on mount
   useEffect(() => {
     const token = getToken();
     if (!token) {
       setLoading(false);
+      if (requireAuth) {
+        window.location.href = "/login";
+      }
       return;
     }
-    // Validate token by fetching user
+
+    // First try cached user
+    const cached = getUser();
+    if (cached) {
+      setUserState(cached);
+      setLoading(false);
+      return;
+    }
+
+    // Fallback: validate with server
     authAPI.getMe()
       .then((res) => {
         setUserState(res.data);
@@ -28,9 +39,12 @@ export function useAuth() {
       .catch(() => {
         removeToken();
         removeUser();
+        if (requireAuth) {
+          window.location.href = "/login";
+        }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [requireAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
@@ -40,16 +54,15 @@ export function useAuth() {
       const { access_token, user } = res.data;
       setToken(access_token);
       setUser(user);
-      setUserState(user);
-      router.push("/dashboard");
+      // Force full page reload to dashboard to ensure clean state
+      window.location.href = "/dashboard";
     } catch (err: any) {
       const msg = err.response?.data?.detail || "Login failed";
       setError(msg);
-      throw new Error(msg);
-    } finally {
       setLoading(false);
+      throw new Error(msg);
     }
-  }, [router]);
+  }, []);
 
   const register = useCallback(async (email: string, username: string, password: string) => {
     setError(null);
@@ -59,23 +72,21 @@ export function useAuth() {
       const { access_token, user } = res.data;
       setToken(access_token);
       setUser(user);
-      setUserState(user);
-      router.push("/dashboard");
+      // Force full page reload to dashboard
+      window.location.href = "/dashboard";
     } catch (err: any) {
       const msg = err.response?.data?.detail || "Registration failed";
       setError(msg);
-      throw new Error(msg);
-    } finally {
       setLoading(false);
+      throw new Error(msg);
     }
-  }, [router]);
+  }, []);
 
   const logout = useCallback(() => {
     removeToken();
     removeUser();
-    setUserState(null);
-    router.push("/login");
-  }, [router]);
+    window.location.href = "/login";
+  }, []);
 
   return {
     user,
